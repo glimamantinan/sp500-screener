@@ -1,6 +1,6 @@
 // ─── SUPABASE CONFIG — fill these in ──────────────────────────────────────
-const SUPABASE_URL  = "https://YOUR_PROJECT_REF.supabase.co";
-const SUPABASE_ANON = "YOUR_ANON_PUBLIC_KEY";
+const SUPABASE_URL  = "https://rclximpbjovqnongbbmn.supabase.co";
+const SUPABASE_ANON = "sb_publishable_v_Uk_SjPV7YcJVSSndPuPg_z3sN8fpC";
 // ──────────────────────────────────────────────────────────────────────────
 
 const { useState, useEffect, useMemo } = React;
