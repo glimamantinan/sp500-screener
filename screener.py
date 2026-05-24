@@ -248,8 +248,6 @@ def sanitise(obj):
         return [sanitise(i) for i in obj]
     elif obj is None:
         return None
-    elif isinstance(obj, float) and np.isnan(obj):
-        return None
     elif isinstance(obj, (np.integer,)):
         return int(obj)
     elif isinstance(obj, (np.floating,)):
@@ -260,13 +258,14 @@ def sanitise(obj):
         return obj.tolist()
     elif isinstance(obj, pd.DataFrame):
         return obj.to_dict(orient="records")
+    elif isinstance(obj, float):
+        if np.isnan(obj):
+            return None
+        if obj.is_integer():
+            return int(obj)   # ← converts 165514002432.0 → 165514002432
+        return obj
     else:
-        try:
-            # Last resort — try standard float/int conversion
-            v = float(obj)
-            return None if np.isnan(v) else v
-        except (TypeError, ValueError):
-            return str(obj)
+        return obj
 
 def upsert_batch(rows: list):
     """Push a batch of rows to Supabase via REST API."""
