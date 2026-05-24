@@ -140,9 +140,9 @@ def fetch_fundamentals(ticker: str) -> dict:
             "debt_to_eq":     info.get("debtToEquity")      or 50,
             "revenue_growth": info.get("revenueGrowth")     or 0,
             "earnings_growth":info.get("earningsGrowth")    or 0,
-            "market_cap":     info.get("marketCap")         or 0,
-            "revenue_ttm":    info.get("totalRevenue")      or 0,
-            "ebitda":         info.get("ebitda")            or 0,
+            "market_cap":     float(info.get("marketCap")    or 0),
+            "revenue_ttm":    float(info.get("totalRevenue") or 0),
+            "ebitda":         float(info.get("ebitda")       or 0),
             "beta":           info.get("beta")              or 1,
             "dividend_yield": info.get("dividendYield")     or 0,
             "week_52_high":   info.get("fiftyTwoWeekHigh")  or 0,
@@ -167,7 +167,6 @@ def score_stock(fund: dict, price_hist: list, spy_hist: list) -> dict:
     revenue_growth = fund.get("revenue_growth", 0)
     earnings_growth= fund.get("earnings_growth", 0)
 
-    # Returns from price history
     def ret(hist, months_back):
         if len(hist) >= months_back + 1:
             p_now  = hist[-1]["close"]
@@ -182,9 +181,8 @@ def score_stock(fund: dict, price_hist: list, spy_hist: list) -> dict:
     spy12m = ret(spy_hist,   12)
     alpha  = mom12m - spy12m
 
-    # ── Sub-scores ──────────────────────────────────────────────────────────
     growth_score = s100(
-        clamp(analyst_upside  / 0.40) * 0.30 +
+        clamp(analyst_upside   / 0.40) * 0.30 +
         clamp((revenue_growth  + 0.05) / 0.45) * 0.25 +
         clamp((earnings_growth + 0.05) / 0.50) * 0.25 +
         clamp(roe / 0.35) * 0.20
@@ -195,8 +193,8 @@ def score_stock(fund: dict, price_hist: list, spy_hist: list) -> dict:
     )
     valuation_score = s100(clamp((42 - fwd_pe) / 42))
     quality_score = s100(
-        clamp(gross_margin) * 0.40 +
-        clamp(roe / 0.35)   * 0.35 +
+        clamp(gross_margin)      * 0.40 +
+        clamp(roe / 0.35)        * 0.35 +
         clamp(100 / (debt_to_eq + 10)) * 0.25
     )
     sentiment_score = s100(clamp((analyst_upside + 0.10) / 0.60))
@@ -217,29 +215,28 @@ def score_stock(fund: dict, price_hist: list, spy_hist: list) -> dict:
         "valuation_score": valuation_score,
         "quality_score":   quality_score,
         "sentiment_score": sentiment_score,
-        "price":           round(price, 2),
-        "analyst_target":  round(analyst_target, 2),
-        "analyst_upside":  round(analyst_upside, 4),
-        "fwd_pe":          round(fwd_pe, 2),
-        "eps":             round(fund.get("eps", 0), 2),
+        "price":           round(float(price), 2),
+        "analyst_target":  round(float(analyst_target), 2),
+        "analyst_upside":  round(float(analyst_upside), 4),
+        "fwd_pe":          round(float(fwd_pe), 2),
+        "eps":             round(float(fund.get("eps", 0)), 2),
         "market_cap":      int(fund.get("market_cap", 0)),
         "revenue_ttm":     int(fund.get("revenue_ttm", 0)),
-        "gross_margin":    round(gross_margin, 4),
+        "gross_margin":    round(float(gross_margin), 4),
         "ebitda":          int(fund.get("ebitda", 0)),
-        "roic":            round(roe, 4),
-        "beta":            round(fund.get("beta", 1), 2),
-        "dividend_yield":  round(fund.get("dividend_yield", 0), 4),
-        "week_52_high":    round(fund.get("week_52_high", 0), 2),
-        "week_52_low":     round(fund.get("week_52_low", 0), 2),
+        "roic":            round(float(roe), 4),
+        "beta":            round(float(fund.get("beta", 1)), 2),
+        "dividend_yield":  round(float(fund.get("dividend_yield", 0)), 4),
+        "week_52_high":    round(float(fund.get("week_52_high", 0)), 2),
+        "week_52_low":     round(float(fund.get("week_52_low", 0)), 2),
         "mom_1m":          round(mom1m,  4),
         "mom_3m":          round(mom3m,  4),
         "mom_6m":          round(mom6m,  4),
         "mom_12m":         round(mom12m, 4),
         "alpha_vs_spy":    round(alpha,  4),
-        "revenue_growth":  round(revenue_growth,  4),
-        "earnings_growth": round(earnings_growth, 4),
+        "revenue_growth":  round(float(revenue_growth),  4),
+        "earnings_growth": round(float(earnings_growth), 4),
     }
-
 # ── Step 6: Upsert to Supabase ────────────────────────────────────────────────
 import json
 
