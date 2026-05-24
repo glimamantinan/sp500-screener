@@ -35,26 +35,19 @@ WEIGHTS = dict(growth=0.35, momentum=0.25, valuation=0.20, quality=0.12, sentime
 # ── Step 1: Fetch S&P 500 constituents from Wikipedia ────────────────────────
 def fetch_constituents() -> pd.DataFrame:
     print("Fetching S&P 500 constituents...")
-    # Try multiple sources in order of reliability
-    sources = [
-        # SPDR ETF holdings CSV (most reliable)
-        "https://www.ssga.com/us/en/intermediary/etfs/library-content/products/fund-data/etfs/us/holdings-daily-us-en-spy.xlsx",
-        # Wikipedia fallback
-        "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies",
-    ]
+    url = (
+        "https://raw.githubusercontent.com/datasets/s-and-p-500-companies"
+        "/main/data/constituents.csv"
+    )
     try:
-        tables = pd.read_html(
-            sources[1],
-            attrs={"id": "constituents"},
-            storage_options={"User-Agent": "Mozilla/5.0"}
-        )
-        df = tables[0][["Symbol", "Security", "GICS Sector"]].copy()
-        df.columns = ["ticker", "name", "sector"]
+        df = pd.read_csv(url)
+        df = df.rename(columns={"Symbol":"ticker","Name":"name","Sector":"sector"})
         df["ticker"] = df["ticker"].str.replace(".", "-", regex=False)
-        print(f"  Parsed {len(df)} constituents")
+        df = df[["ticker","name","sector"]]
+        print(f"  Fetched {len(df)} constituents")
         return df
     except Exception as e:
-        print(f"  Wikipedia failed ({e}), using fallback list")
+        print(f"  CSV fetch failed ({e}), using fallback list")
         return get_fallback_universe()
 
 # ── Step 2: Rank by market cap, take top N ───────────────────────────────────
