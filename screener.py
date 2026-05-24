@@ -249,14 +249,27 @@ def sanitise(obj):
         return {k: sanitise(v) for k, v in obj.items()}
     elif isinstance(obj, list):
         return [sanitise(i) for i in obj]
+    elif obj is None:
+        return None
     elif isinstance(obj, float) and np.isnan(obj):
         return None
-    elif hasattr(obj, 'item'):      # catches np.int64, np.float64, etc.
-        return obj.item()
-    elif hasattr(obj, 'tolist'):    # catches pd.Series, np.ndarray
+    elif isinstance(obj, (np.integer,)):
+        return int(obj)
+    elif isinstance(obj, (np.floating,)):
+        return None if np.isnan(obj) else float(obj)
+    elif isinstance(obj, (np.ndarray,)):
         return obj.tolist()
+    elif isinstance(obj, pd.Series):
+        return obj.tolist()
+    elif isinstance(obj, pd.DataFrame):
+        return obj.to_dict(orient="records")
     else:
-        return obj
+        try:
+            # Last resort — try standard float/int conversion
+            v = float(obj)
+            return None if np.isnan(v) else v
+        except (TypeError, ValueError):
+            return str(obj)
 
 def upsert_batch(rows: list):
     """Push a batch of rows to Supabase via REST API."""
