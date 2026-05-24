@@ -41,9 +41,20 @@ def fetch_constituents() -> pd.DataFrame:
     )
     try:
         df = pd.read_csv(url)
-        df = df.rename(columns={"Symbol":"ticker","Name":"name","Sector":"sector"})
+        print(f"  CSV columns: {df.columns.tolist()}")  # debug line
+        # Flexible column mapping
+        col_map = {}
+        for col in df.columns:
+            cl = col.lower()
+            if "symbol" in cl or "ticker" in cl:
+                col_map[col] = "ticker"
+            elif "name" in cl or "security" in cl or "company" in cl:
+                col_map[col] = "name"
+            elif "sector" in cl or "gics" in cl:
+                col_map[col] = "sector"
+        df = df.rename(columns=col_map)
         df["ticker"] = df["ticker"].str.replace(".", "-", regex=False)
-        df = df[["ticker","name","sector"]]
+        df = df[["ticker", "name", "sector"]]
         print(f"  Fetched {len(df)} constituents")
         return df
     except Exception as e:
