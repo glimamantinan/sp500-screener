@@ -96,10 +96,10 @@ def fetch_price_history(tickers: list) -> dict:
     print(f"Fetching price history for {len(tickers)} tickers + SPY...")
     all_tickers = tickers + ["SPY"]
     end   = datetime.today()
-    start = end - timedelta(days=400)  # ~13 months
+    start = end - timedelta(days=400)
 
     try:
-        raw = yf.download(
+        raw    = yf.download(
             all_tickers, start=start, end=end,
             interval="1mo", auto_adjust=True,
             progress=False, threads=True
@@ -110,9 +110,12 @@ def fetch_price_history(tickers: list) -> dict:
             if t in closes.columns:
                 series = closes[t].dropna()
                 result[t] = [
-                    {"date": str(d)[:7], "close": round(float(v), 4)}
+                    {
+                        "date":  str(d)[:7],
+                        "close": round(float(v), 4)  # force scalar float
+                    }
                     for d, v in series.items()
-                    if not np.isnan(v)
+                    if not (isinstance(v, float) and np.isnan(v))
                 ]
             else:
                 result[t] = []
