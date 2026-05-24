@@ -270,12 +270,11 @@ def sanitise(obj):
 def upsert_batch(rows: list):
     """Push a batch of rows to Supabase via REST API."""
     clean_rows = [sanitise(row) for row in rows]
-    # Verify serialisable before sending
-    json.dumps(clean_rows)
+    json.dumps(clean_rows)  # verify serialisable before sending
     headers = {
         "apikey":        SUPABASE_KEY,
         "Authorization": f"Bearer {SUPABASE_KEY}",
-        "Content-Type":  "application/json",
+        "Content-Type":  'application/json',
         "Prefer":        "resolution=merge-duplicates",
     }
     r = requests.post(
