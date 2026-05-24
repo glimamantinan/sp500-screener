@@ -241,8 +241,28 @@ def score_stock(fund: dict, price_hist: list, spy_hist: list) -> dict:
     }
 
 # ── Step 6: Upsert to Supabase ────────────────────────────────────────────────
+import json
+
+def sanitise(obj):
+    """Recursively convert all pandas/numpy types to plain Python types."""
+    if isinstance(obj, dict):
+        return {k: sanitise(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [sanitise(i) for i in obj]
+    elif isinstance(obj, float) and np.isnan(obj):
+        return None
+    elif hasattr(obj, 'item'):      # catches np.int64, np.float64, etc.
+        return obj.item()
+    elif hasattr(obj, 'tolist'):    # catches pd.Series, np.ndarray
+        return obj.tolist()
+    else:
+        return obj
+
 def upsert_batch(rows: list):
     """Push a batch of rows to Supabase via REST API."""
+    clean_rows = [sanitise(row) for row in rows]
+    # Verify serialisable before sending
+    json.dumps(clean_rows)
     headers = {
         "apikey":        SUPABASE_KEY,
         "Authorization": f"Bearer {SUPABASE_KEY}",
@@ -252,7 +272,7 @@ def upsert_batch(rows: list):
     r = requests.post(
         f"{SUPABASE_URL}/rest/v1/{TABLE}",
         headers=headers,
-        json=rows,
+        json=clean_rows,
         timeout=30,
     )
     if r.status_code not in (200, 201):
