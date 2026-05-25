@@ -4,8 +4,6 @@ const SUPABASE_ANON = "sb_publishable_v_Uk_SjPV7YcJVSSndPuPg_z3sN8fpC";
 // ──────────────────────────────────────────────────────────────────────────
 
 const { useState, useEffect, useMemo } = React;
-const { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
-        LineChart, Line, CartesianGrid, ReferenceLine, Cell } = Recharts;
 
 // ── helpers ───────────────────────────────────────────────────────────────
 const fmt = (v, d=1) => v == null ? "—" : Number(v).toFixed(d);
@@ -64,6 +62,53 @@ function Metric({ label, value }) {
       <div style={{ fontSize:11, color:"#64748b", marginBottom:4, textTransform:"uppercase", letterSpacing:"0.05em" }}>{label}</div>
       <div style={{ fontSize:18, fontWeight:600 }}>{value}</div>
     </div>
+  );
+}
+
+// ── Pure SVG bar chart (no Recharts dependency) ────────────────────────────
+function ReturnChart({ data }) {
+  const W = 400, H = 140, pad = { t:10, r:10, b:30, l:44 };
+  const innerW = W - pad.l - pad.r;
+  const innerH = H - pad.t - pad.b;
+  const vals = data.map(d => d.val);
+  const maxAbs = Math.max(Math.abs(Math.min(...vals)), Math.abs(Math.max(...vals)), 1);
+  const barW = Math.floor(innerW / data.length * 0.6);
+  const barGap = innerW / data.length;
+  const zeroY = pad.t + innerH * (maxAbs / (2 * maxAbs));
+
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} style={{ width:"100%", height:"auto" }}>
+      {/* zero line */}
+      <line x1={pad.l} y1={zeroY} x2={W-pad.r} y2={zeroY} stroke="#334155" strokeWidth={1} />
+      {/* gridlines */}
+      {[-1,0,1].map(t => {
+        const y = pad.t + innerH * (1 - (t*maxAbs/2 + maxAbs)/(2*maxAbs));
+        return <line key={t} x1={pad.l} y1={y} x2={W-pad.r} y2={y} stroke="#1e293b" strokeDasharray="3 3" strokeWidth={1} />;
+      })}
+      {/* bars */}
+      {data.map((d, i) => {
+        const cx = pad.l + barGap * i + barGap / 2;
+        const barH = Math.abs(d.val) / (2 * maxAbs) * innerH;
+        const y = d.val >= 0 ? zeroY - barH : zeroY;
+        return (
+          <g key={d.name}>
+            <rect x={cx - barW/2} y={y} width={barW} height={barH}
+                  fill={d.val >= 0 ? "#22c55e" : "#ef4444"} rx={2} />
+            <text x={cx} y={H - pad.b + 14} textAnchor="middle" fontSize={11} fill="#64748b">{d.name}</text>
+            <text x={cx} y={d.val >= 0 ? y - 4 : y + barH + 12}
+                  textAnchor="middle" fontSize={10} fill={d.val >= 0 ? "#22c55e" : "#ef4444"}>
+              {d.val > 0 ? "+" : ""}{d.val}%
+            </text>
+          </g>
+        );
+      })}
+      {/* y-axis labels */}
+      {[-1,0,1].map(t => {
+        const pct = (t * maxAbs).toFixed(0);
+        const y = pad.t + innerH * (1 - (t*maxAbs + maxAbs)/(2*maxAbs));
+        return <text key={t} x={pad.l-6} y={y+4} textAnchor="end" fontSize={10} fill="#64748b">{pct}%</text>;
+      })}
+    </svg>
   );
 }
 
@@ -129,22 +174,11 @@ function StockDetail({ stock, onClose }) {
           <Metric label="Dividend Yld"  value={fmtPct(stock.dividend_yield)} />
         </div>
 
-        {/* return chart */}
+        {/* return chart — pure SVG, no dependencies */}
         {returnData.length > 0 && (
           <div style={{ background:"#0b0f19", borderRadius:8, padding:16 }}>
             <div style={{ fontSize:12, color:"#64748b", marginBottom:12, textTransform:"uppercase", letterSpacing:"0.05em" }}>Period returns (%)</div>
-            <ResponsiveContainer width="100%" height={160}>
-              <BarChart data={returnData} margin={{ top:4, right:4, left:0, bottom:4 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
-                <XAxis dataKey="name" tick={{ fontSize:11, fill:"#64748b" }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontSize:11, fill:"#64748b" }} axisLine={false} tickLine={false} tickFormatter={v=>`${v}%`} />
-                <Tooltip formatter={v=>[`${v}%`,"Return"]} contentStyle={{ background:"#1e293b", border:"none", borderRadius:6 }} />
-                <ReferenceLine y={0} stroke="#334155" />
-                <Bar dataKey="val" radius={[4,4,0,0]}>
-                  {returnData.map((d,i) => <Cell key={i} fill={d.val>=0?"#22c55e":"#ef4444"} />)}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+            <ReturnChart data={returnData} />
           </div>
         )}
 
